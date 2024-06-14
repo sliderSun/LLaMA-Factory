@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING, Any, Dict, List
 
 
 if TYPE_CHECKING:
-    from transformers.tokenization_utils import PreTrainedTokenizer
+    from transformers import PreTrainedTokenizer
 
     from ...hparams import DataArguments
 
@@ -12,7 +12,8 @@ def preprocess_pretrain_dataset(
     examples: Dict[str, List[Any]], tokenizer: "PreTrainedTokenizer", data_args: "DataArguments"
 ) -> Dict[str, List[List[int]]]:
     # build grouped texts with format `X1 X2 X3 ...` if packing is enabled
-    text_examples = [messages[0]["content"] + tokenizer.eos_token for messages in examples["prompt"]]
+    eos_token = "<|end_of_text|>" if data_args.template == "llama3" else tokenizer.eos_token
+    text_examples = [messages[0]["content"] + eos_token for messages in examples["prompt"]]
 
     if not data_args.packing:
         if data_args.template == "gemma":

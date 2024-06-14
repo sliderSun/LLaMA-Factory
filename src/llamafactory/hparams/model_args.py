@@ -1,5 +1,11 @@
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, Literal, Optional
+from typing import TYPE_CHECKING, Any, Dict, Literal, Optional, Union
+
+from typing_extensions import Self
+
+
+if TYPE_CHECKING:
+    import torch
 
 
 @dataclass
@@ -15,7 +21,12 @@ class ModelArguments:
     )
     adapter_name_or_path: Optional[str] = field(
         default=None,
-        metadata={"help": "Path to the adapter weight or identifier from huggingface.co/models."},
+        metadata={
+            "help": (
+                "Path to the adapter weight or identifier from huggingface.co/models. "
+                "Use commas to separate multiple adapters."
+            )
+        },
     )
     cache_dir: Optional[str] = field(
         default=None,
@@ -35,7 +46,7 @@ class ModelArguments:
     )
     new_special_tokens: Optional[str] = field(
         default=None,
-        metadata={"help": "Special tokens to be added into the tokenizer."},
+        metadata={"help": "Special tokens to be added into the tokenizer. Use commas to separate multiple tokens."},
     )
     model_revision: str = field(
         default="main",
@@ -187,9 +198,9 @@ class ModelArguments:
     )
 
     def __post_init__(self):
-        self.compute_dtype = None
-        self.device_map = None
-        self.model_max_length = None
+        self.compute_dtype: Optional["torch.dtype"] = None
+        self.device_map: Optional[Union[str, Dict[str, Any]]] = None
+        self.model_max_length: Optional[int] = None
 
         if self.split_special_tokens and self.use_fast_tokenizer:
             raise ValueError("`split_special_tokens` is only supported for slow tokenizers.")
@@ -211,3 +222,13 @@ class ModelArguments:
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
+
+    @classmethod
+    def copyfrom(cls, old_arg: Self, **kwargs) -> Self:
+        arg_dict = old_arg.to_dict()
+        arg_dict.update(**kwargs)
+        new_arg = cls(**arg_dict)
+        new_arg.compute_dtype = old_arg.compute_dtype
+        new_arg.device_map = old_arg.device_map
+        new_arg.model_max_length = old_arg.model_max_length
+        return new_arg
